@@ -1,7 +1,7 @@
 import { createFrom, attach, getParent, children } from "https://raw.githubusercontent.com/pjensen/ecs-js/main/index.js";
 import {
   TaskState,
-  DocumentState,
+  ArtifactState,
   Summary,
   Facts,
 } from "../components.js";
@@ -18,16 +18,23 @@ function projectOf(world, id) {
   return 0;
 }
 
-export function ExecutionSystem(world, _dt) {
+export function ExecutionSystem(world, _dt, eventLog) {
   for (const [taskId, task] of world.query(TaskState)) {
     if (task.status !== "ready") continue;
     if (!task.assignedTo) continue;
 
     world.set(taskId, TaskState, { status: "running" });
+    if (eventLog) {
+      eventLog.emit(world.step, "cmp_set", {
+        id: taskId,
+        cmp: "TaskState",
+        data: { status: "running" },
+      });
+    }
 
     try {
       if (task.kind === "analyze-document") {
-        const doc = world.get(task.target, DocumentState);
+        const doc = world.get(task.target, ArtifactState);
         const summary = world.get(task.target, Summary);
         const facts = world.get(task.target, Facts);
 
@@ -40,6 +47,13 @@ export function ExecutionSystem(world, _dt) {
           status: "done",
           output,
         });
+        if (eventLog) {
+          eventLog.emit(world.step, "cmp_set", {
+            id: taskId,
+            cmp: "TaskState",
+            data: { status: "done", output },
+          });
+        }
 
         const projectId = getParent(world, taskId);
         for (const childId of children(world, projectId)) {
@@ -53,6 +67,13 @@ export function ExecutionSystem(world, _dt) {
             status: "ready",
             input: output,
           });
+          if (eventLog) {
+            eventLog.emit(world.step, "cmp_set", {
+              id: childId,
+              cmp: "TaskState",
+              data: { status: "ready", input: output },
+            });
+          }
         }
       }
 
@@ -68,6 +89,13 @@ export function ExecutionSystem(world, _dt) {
           status: "done",
           output,
         });
+        if (eventLog) {
+          eventLog.emit(world.step, "cmp_set", {
+            id: taskId,
+            cmp: "TaskState",
+            data: { status: "done", output },
+          });
+        }
 
         const rootTask = world.get(task.parentTask, TaskState);
         if (rootTask) {
@@ -75,6 +103,13 @@ export function ExecutionSystem(world, _dt) {
             status: "done",
             output,
           });
+          if (eventLog) {
+            eventLog.emit(world.step, "cmp_set", {
+              id: task.parentTask,
+              cmp: "TaskState",
+              data: { status: "done", output },
+            });
+          }
         }
 
         const sessionId = task.session;
@@ -84,7 +119,24 @@ export function ExecutionSystem(world, _dt) {
           text: output,
           turn: (session?.turn ?? 0) + 1,
         });
+        if (eventLog) {
+          eventLog.emit(world.step, "entity_create", {
+            id: assistantMsgId,
+            arch: "MessageEntity",
+            data: {
+              role: "assistant",
+              text: output,
+              turn: (session?.turn ?? 0) + 1,
+            },
+          });
+        }
         attach(world, assistantMsgId, sessionId);
+        if (eventLog) {
+          eventLog.emit(world.step, "entity_attach", {
+            child: assistantMsgId,
+            par: sessionId,
+          });
+        }
 
         const projectId = projectOf(world, taskId);
         const memoryId = createFrom(world, MemoryEntity, {
@@ -92,13 +144,37 @@ export function ExecutionSystem(world, _dt) {
           scope: "project",
           weight: 10,
         });
+        if (eventLog) {
+          eventLog.emit(world.step, "entity_create", {
+            id: memoryId,
+            arch: "MemoryEntity",
+            data: {
+              text: "A user-facing answer was produced from indexed project material.",
+              scope: "project",
+              weight: 10,
+            },
+          });
+        }
         attach(world, memoryId, projectId);
+        if (eventLog) {
+          eventLog.emit(world.step, "entity_attach", {
+            child: memoryId,
+            par: projectId,
+          });
+        }
       }
     } catch (err) {
       world.set(taskId, TaskState, {
         status: "failed",
         error: err?.stack || String(err),
       });
+      if (eventLog) {
+        eventLog.emit(world.step, "cmp_set", {
+          id: taskId,
+          cmp: "TaskState",
+          data: { status: "failed", error: err?.stack || String(err) },
+        });
+      }
     }
   }
 }

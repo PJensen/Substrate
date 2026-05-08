@@ -6,7 +6,7 @@ import {
   AgentState,
   Capability,
   ToolState,
-  DocumentState,
+  ArtifactState,
   TaskState,
   Attention,
   MessageState,
@@ -51,12 +51,12 @@ export const ToolEntity = defineArchetype(
   })]
 );
 
-export const DocumentEntity = defineArchetype(
-  "DocumentEntity",
-  [Node, { kind: "Document" }],
-  [Name, (p) => ({ value: p.title ?? "Document" })],
-  [DocumentState, (p) => ({
-    title: p.title ?? "Document",
+export const Artifact = defineArchetype(
+  "Artifact",
+  [Node, { kind: "Artifact" }],
+  [Name, (p) => ({ value: p.title ?? "Artifact" })],
+  [ArtifactState, (p) => ({
+    title: p.title ?? "Artifact",
     uri: p.uri ?? "",
     trust: p.trust ?? 0.5,
     needsIndex: p.needsIndex ?? true,

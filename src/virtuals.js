@@ -5,7 +5,7 @@ import {
   MessageState,
   Goal,
   Constraint,
-  DocumentState,
+  ArtifactState,
   Summary,
   TaskState,
   Name,
@@ -50,7 +50,7 @@ export function registerVirtuals(world, virtuals) {
       const c = world.get(childId, Constraint);
       if (c) constraints.push(c.text);
 
-      const d = world.get(childId, DocumentState);
+      const d = world.get(childId, ArtifactState);
       if (d) {
         docs.push({
           title: d.title,

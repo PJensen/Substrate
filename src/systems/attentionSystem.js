@@ -1,7 +1,7 @@
 import { TaskState, Attention, SessionState, Name, Node } from "../components.js";
 import { children, getParent } from "https://raw.githubusercontent.com/pjensen/ecs-js/main/index.js";
 
-export function AttentionSystem(world, _dt) {
+export function AttentionSystem(world, _dt, eventLog) {
   for (const [taskId, task] of world.query(TaskState)) {
     let score = task.priority;
 
@@ -12,6 +12,13 @@ export function AttentionSystem(world, _dt) {
     else if (task.status === "done") score = 0;
 
     world.set(taskId, Attention, { score });
+    if (eventLog) {
+      eventLog.emit(world.step, "cmp_set", {
+        id: taskId,
+        cmp: "Attention",
+        data: { score },
+      });
+    }
   }
 
   for (const [sessionId, session] of world.query(SessionState)) {
@@ -46,5 +53,12 @@ export function AttentionSystem(world, _dt) {
       ...session,
       focus,
     });
+    if (eventLog) {
+      eventLog.emit(world.step, "cmp_set", {
+        id: sessionId,
+        cmp: "SessionState",
+        data: { ...session, focus },
+      });
+    }
   }
 }

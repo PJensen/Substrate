@@ -1,1 +1,3 @@
 deno.lock
+substrate.events.jsonl
+.substrate/world.json

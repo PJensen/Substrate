@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "substrate": {
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-read",
+        "--allow-write",
+        "/home/pjensen/Repos/Substrate/src/substrate-server.ts"
+      ]
+    }
+  }
+}

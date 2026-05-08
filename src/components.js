@@ -29,7 +29,7 @@ export const ToolState = defineComponent("ToolState", {
   supports: [],
 });
 
-export const DocumentState = defineComponent("DocumentState", {
+export const ArtifactState = defineComponent("ArtifactState", {
   title: "",
   uri: "",
   trust: 0.5,
